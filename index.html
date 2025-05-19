@@ -1,203 +1,253 @@
 <!DOCTYPE html>
 <html lang="id">
-<head><script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
   <title>Manajemen Data Siswa</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 20px;
-      background: #f4f4f4;
+    /* ---------- VARIABEL WARNA UTAMA ---------- */
+    :root{
+      --bg:#e9f0f4;
+      --card:#fff;
+      --text:#333;
+      --primary:#007bff;
+      --success:#28a745;
+      --warning:#ffc107;
+      --danger:#dc3545;
+      --secondary:#6c757d;
+      --border:#ddd;
+      --thead:#007bff;
+      --thead-text:#fff;
+      --input-bg:#fff;
+    }
+    /* ----------- TEMA GELAP ------------ */
+    .dark{
+      --bg:#181a1f;
+      --card:#24272e;
+      --text:#f1f3f5;
+      --primary:#3b82f6;
+      --success:#22c55e;
+      --warning:#facc15;
+      --danger:#ef4444;
+      --secondary:#64748b;
+      --border:#32363e;
+      --thead:#3b82f6;
+      --thead-text:#f8fafc;
+      --input-bg:#1f232a;
     }
 
-    h1 {
-      text-align: center;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 20px;
-      background: #fff;
-    }
-
-    th, td {
-      padding: 10px;
-      border: 1px solid #ddd;
-      text-align: center;
-    }
-
-    th {
-      background-color: #007BFF;
-      color: white;
-    }
-
-    form {
-      background: #fff;
-      padding: 15px;
-      border-radius: 5px;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-    }
-
-    input, select, textarea {
-      padding: 8px;
-      width: calc(33% - 10px);
-      box-sizing: border-box;
-    }
-
-    textarea {
-      resize: vertical;
-    }
-
-    button {
-      padding: 8px 12px;
-      margin: 5px 0;
-      cursor: pointer;
-    }
-
-    .btn-edit {
-      background: #ffc107;
-      border: none;
-      color: white;
-    }
-
-    .btn-hapus {
-      background: #dc3545;
-      border: none;
-      color: white;
-    }
-
-    .btn-simpan {
-      background: #28a745;
-      border: none;
-      color: white;
+    /* ---------- GAYA UMUM ---------- */
+    html,body{margin:0;padding:0;font-family:'Segoe UI',sans-serif;}
+    body{background:var(--bg);color:var(--text);padding:20px;transition:background .3s,color .3s;}
+    h1{text-align:center;margin-top:0;color:var(--primary);}
+    .container{max-width:1000px;margin:auto;background:var(--card);padding:20px;border-radius:10px;box-shadow:0 5px 15px rgba(0,0,0,.1);transition:background .3s;}
+    form,.filter-bar,.summary,.actions{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:15px}
+    input,select,textarea{padding:10px;width:calc(33.3% - 10px);border:1px solid var(--border);border-radius:5px;background:var(--input-bg);color:var(--text);transition:background .3s,color .3s,border .3s}
+    textarea{resize:vertical}
+    input[type=file]{width:auto}
+    button{padding:10px 15px;border:none;border-radius:5px;color:#fff;cursor:pointer;font-weight:600}
+    .btn-simpan{background:var(--success)}
+    .btn-edit{background:var(--warning);color:#000}
+    .btn-hapus{background:var(--danger)}
+    .btn-export{background:var(--primary)}
+    .btn-import{background:var(--secondary)}
+    .btn-clear{background:var(--secondary)}
+    .btn-theme{background:var(--primary)}
+    .summary span{font-weight:bold;margin-right:15px}
+    table{width:100%;border-collapse:collapse;margin-top:10px}
+    th,td{padding:10px;border:1px solid var(--border);text-align:center}
+    th{background:var(--thead);color:var(--thead-text);cursor:pointer;transition:background .3s,color .3s}
+    /* responsif */
+    @media(max-width:768px){
+      input,select,textarea{width:100%}
     }
   </style>
 </head>
 <body>
-  <h1>Data Siswa</h1>
+  <div class="container">
+    <h1>Manajemen Data Siswa</h1>
 
-  <form id="formSiswa"><button onclick="exportExcel()" style="margin-top: 10px;">Ekspor ke Excel</button>
-    <input type="text" id="nama" placeholder="Nama Siswa" required />
-    <input type="text" id="kelas" placeholder="Kelas" required />
-    <input type="number" id="umur" placeholder="Umur" required />
-    <select id="jk" required>
-      <option value="">Jenis Kelamin</option>
-      <option value="Laki-laki">Laki-laki</option>
-      <option value="Perempuan">Perempuan</option>
-    </select>
-    <input type="text" id="ortu" placeholder="Nama Orang Tua" required />
-    <textarea id="alamat" placeholder="Alamat" rows="2" required></textarea>
-    <button type="submit" class="btn-simpan">Simpan</button>
-  </form>
+    <!-- Tombol toggle tema -->
+    <div class="actions" style="justify-content:flex-end">
+      <button class="btn-theme" onclick="toggleTheme()">🌙/☀️ Tema</button>
+    </div>
 
-  <table id="tabelSiswa">
-    <thead>
-      <tr>
-        <th>No</th>
-        <th>Nama</th>
-        <th>Kelas</th>
-        <th>Umur</th>
-        <th>Jenis Kelamin</th>
-        <th>Orang Tua</th>
-        <th>Alamat</th>
-        <th>Aksi</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
+    <!-- Form input -->
+    <form id="formSiswa">
+      <input type="text" id="nama" placeholder="Nama Siswa" required>
+      <input type="text" id="kelas" placeholder="Kelas" required>
+      <input type="number" id="umur" placeholder="Umur" required>
+      <select id="jk" required>
+        <option value="">Jenis Kelamin</option>
+        <option value="Laki-laki">Laki-laki</option>
+        <option value="Perempuan">Perempuan</option>
+      </select>
+      <input type="text" id="ortu" placeholder="Nama Orang Tua" required>
+      <textarea id="alamat" placeholder="Alamat" rows="2" required></textarea>
+      <button type="submit" class="btn-simpan">Simpan</button>
+    </form>
+
+    <!-- Filter -->
+    <div class="filter-bar">
+      <input type="text" id="filterNama" placeholder="Cari Nama" oninput="tampilkanData()">
+      <input type="text" id="filterKelas" placeholder="Cari Kelas" oninput="tampilkanData()">
+      <input type="number" id="filterUmur" placeholder="Cari Umur" oninput="tampilkanData()">
+    </div>
+
+    <!-- Aksi -->
+    <div class="actions">
+      <button class="btn-export" onclick="exportExcel()">Ekspor Excel</button>
+      <input type="file" onchange="importExcel(event)" accept=".xlsx,.xls" class="btn-import">
+      <button class="btn-clear" onclick="hapusSemua()">Hapus Semua</button>
+    </div>
+
+    <!-- Ringkasan -->
+    <div class="summary">
+      <span>Total Siswa: <span id="total"></span></span>
+      <span>Laki-laki: <span id="laki"></span></span>
+      <span>Perempuan: <span id="perempuan"></span></span>
+    </div>
+
+    <!-- Tabel -->
+    <table>
+      <thead>
+        <tr>
+          <th>No</th>
+          <th onclick="urutkan('nama')">Nama</th>
+          <th onclick="urutkan('kelas')">Kelas</th>
+          <th onclick="urutkan('umur')">Umur</th>
+          <th onclick="urutkan('jk')">Jenis Kelamin</th>
+          <th>Orang Tua</th>
+          <th>Alamat</th>
+          <th>Aksi</th>
+        </tr>
+      </thead>
+      <tbody id="tabelBody"></tbody>
+    </table>
+  </div>
 
   <script>
-    const form = document.getElementById('formSiswa');
-    const tabelBody = document.querySelector('#tabelSiswa tbody');
-    let siswaList = JSON.parse(localStorage.getItem('siswaList')) || [];
-    let editIndex = null;
+    /* ---------- DATA & STATE ---------- */
+    let siswaList=JSON.parse(localStorage.getItem('siswaList'))||[];
+    let editIndex=null,sortField='',sortDir=1;
 
-    function tampilkanData() {
-      tabelBody.innerHTML = '';
-      siswaList.forEach((siswa, index) => {
-        const row = tabelBody.insertRow();
-        row.innerHTML = `
-          <td>${index + 1}</td>
-          <td>${siswa.nama}</td>
-          <td>${siswa.kelas}</td>
-          <td>${siswa.umur}</td>
-          <td>${siswa.jk}</td>
-          <td>${siswa.ortu}</td>
-          <td>${siswa.alamat}</td>
-          <td>
-            <button class="btn-edit" onclick="editSiswa(${index})">Edit</button>
-            <button class="btn-hapus" onclick="hapusSiswa(${index})">Hapus</button>
-          </td>
-        `;
-      });
-    }
-
-    function simpanKeLocalStorage() {
-      localStorage.setItem('siswaList', JSON.stringify(siswaList));
-    }
-
-    form.addEventListener('submit', function(e) {
+    /* ---------- CRUD ---------- */
+    const form=document.getElementById('formSiswa');
+    form.addEventListener('submit',e=>{
       e.preventDefault();
-      const nama = document.getElementById('nama').value;
-      const kelas = document.getElementById('kelas').value;
-      const umur = document.getElementById('umur').value;
-      const jk = document.getElementById('jk').value;
-      const ortu = document.getElementById('ortu').value;
-      const alamat = document.getElementById('alamat').value;
-
-      const siswaBaru = { nama, kelas, umur, jk, ortu, alamat };
-
-      if (editIndex === null) {
-        siswaList.push(siswaBaru);
-      } else {
-        siswaList[editIndex] = siswaBaru;
-        editIndex = null;
-      }
-
-      simpanKeLocalStorage();
-      tampilkanData();
-      form.reset();
+      const s={
+        nama:form.nama.value,
+        kelas:form.kelas.value,
+        umur:form.umur.value,
+        jk:form.jk.value,
+        ortu:form.ortu.value,
+        alamat:form.alamat.value
+      };
+      if(editIndex===null)siswaList.push(s);else{siswaList[editIndex]=s;editIndex=null;}
+      simpanLocal();form.reset();tampilkanData();
     });
 
-    window.editSiswa = function(index) {
-      const siswa = siswaList[index];
-      document.getElementById('nama').value = siswa.nama;
-      document.getElementById('kelas').value = siswa.kelas;
-      document.getElementById('umur').value = siswa.umur;
-      document.getElementById('jk').value = siswa.jk;
-      document.getElementById('ortu').value = siswa.ortu;
-      document.getElementById('alamat').value = siswa.alamat;
-      editIndex = index;
+    function editSiswa(i){
+      const s=siswaList[i];
+      form.nama.value=s.nama;form.kelas.value=s.kelas;form.umur.value=s.umur;
+      form.jk.value=s.jk;form.ortu.value=s.ortu;form.alamat.value=s.alamat;
+      editIndex=i;
+    }
+    function hapusSiswa(i){
+      if(confirm("Hapus data ini?")){siswaList.splice(i,1);simpanLocal();tampilkanData();}
+    }
+    function hapusSemua(){
+      if(confirm("Hapus semua data?")){siswaList=[];simpanLocal();tampilkanData();}
+    }
+    function simpanLocal(){localStorage.setItem('siswaList',JSON.stringify(siswaList));}
+
+    /* ---------- TAMPIL & FILTER ---------- */
+    function tampilkanData(){
+      const tbody=document.getElementById('tabelBody');
+      tbody.innerHTML='';
+      const namaF=document.getElementById('filterNama').value.toLowerCase();
+      const kelasF=document.getElementById('filterKelas').value.toLowerCase();
+      const umurF=document.getElementById('filterUmur').value;
+      let tot=0,l=0,p=0;
+      siswaList.forEach((s,i)=>{
+        const cocok=s.nama.toLowerCase().includes(namaF)&&
+                    s.kelas.toLowerCase().includes(kelasF)&&
+                    (umurF===''||s.umur==umurF);
+        if(cocok){
+          const r=tbody.insertRow();
+          r.innerHTML=`
+            <td>${tot+1}</td>
+            <td>${s.nama}</td>
+            <td>${s.kelas}</td>
+            <td>${s.umur}</td>
+            <td>${s.jk}</td>
+            <td>${s.ortu}</td>
+            <td>${s.alamat}</td>
+            <td>
+              <button class="btn-edit" onclick="editSiswa(${i})">Edit</button>
+              <button class="btn-hapus" onclick="hapusSiswa(${i})">Hapus</button>
+            </td>`;
+          tot++;if(s.jk==="Laki-laki")l++;if(s.jk==="Perempuan")p++;
+        }
+      });
+      document.getElementById('total').textContent=tot;
+      document.getElementById('laki').textContent=l;
+      document.getElementById('perempuan').textContent=p;
     }
 
-    window.hapusSiswa = function(index) {
-      if (confirm("Yakin ingin menghapus data ini?")) {
-        siswaList.splice(index, 1);
-        simpanKeLocalStorage();
-        tampilkanData();
-      }
+    /* ---------- SORTING ---------- */
+    function urutkan(f){
+      sortDir=(sortField===f)?-sortDir:1;sortField=f;
+      siswaList.sort((a,b)=>{
+        let A=a[f],B=b[f];
+        if(typeof A==='string')A=A.toLowerCase();
+        if(typeof B==='string')B=B.toLowerCase();
+        return(A<B?-1: A>B?1:0)*sortDir;
+      });
+      tampilkanData();
     }
+
+    /* ---------- IMPOR / EKSPOR ---------- */
+    function exportExcel(){
+      const data=siswaList.map((s,i)=>({
+        No:i+1,Nama:s.nama,Kelas:s.kelas,Umur:s.umur,"Jenis Kelamin":s.jk,
+        "Orang Tua":s.ortu,Alamat:s.alamat
+      }));
+      const ws=XLSX.utils.json_to_sheet(data),wb=XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb,ws,"Data Siswa");
+      XLSX.writeFile(wb,"data_siswa.xlsx");
+    }
+    function importExcel(e){
+      const f=e.target.files[0];if(!f)return;
+      const r=new FileReader();
+      r.onload=ev=>{
+        const wb=XLSX.read(ev.target.result,{type:'binary'});
+        const d=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
+        siswaList=d.map(r=>({
+          nama:r.Nama||'',kelas:r.Kelas||'',umur:r.Umur||'',
+          jk:r['Jenis Kelamin']||'',ortu:r['Orang Tua']||'',alamat:r.Alamat||''
+        }));
+        simpanLocal();tampilkanData();
+      };
+      r.readAsBinaryString(f);
+    }
+
+    /* ---------- TEMA GELAP ---------- */
+    function setTheme(mode){
+      document.documentElement.classList.toggle('dark',mode==='dark');
+      localStorage.setItem('tema',mode);
+    }
+    function toggleTheme(){
+      const mode=document.documentElement.classList.contains('dark')?'light':'dark';
+      setTheme(mode);
+    }
+    (function(){ // inisialisasi tema
+      const saved=localStorage.getItem('tema')||'light';
+      setTheme(saved);
+    })();
 
     tampilkanData();
-function exportExcel() {
-  const wb = XLSX.utils.book_new();
-  const data = siswaList.map((s, i) => ({
-    No: i + 1,
-    Nama: s.nama,
-    Kelas: s.kelas,
-    Umur: s.umur,
-    "Jenis Kelamin": s.jk,
-    "Nama Orang Tua": s.ortu,
-    Alamat: s.alamat
-  }));
-  const ws = XLSX.utils.json_to_sheet(data);
-  XLSX.utils.book_append_sheet(wb, ws, "Data Siswa");
-  XLSX.writeFile(wb, "data_siswa.xlsx");
-}
   </script>
 </body>
 </html>
